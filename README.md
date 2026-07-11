@@ -1,7 +1,3 @@
-# Tauri + Vanilla
+# AlarmScheduleApp
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+A "vibecoded" app I made for myself. It's goal is to play scheduled alarm screens - including both set time and delay after event (other alarm's start or dismiss) based alarms - or screens between alarm.
