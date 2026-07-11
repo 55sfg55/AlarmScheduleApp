@@ -1,0 +1,40 @@
+<div class="screen-test">
+  <p>Test screen</p>
+  <p>{{betweenSource}}</p>
+  <p id="time">--:--:--</p>
+</div>
+
+<script>
+window.__screenDef = {
+  js: function(container, context) {
+    console.log('Test screen js called');
+
+    const timeEl = container.querySelector('#time');
+    
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      timeEl.textContent = `${hh}:${mm}:${ss}`;
+    }
+
+    // Update immediately
+    updateClock();
+
+    // Update every second
+    const interval = setInterval(updateClock, 1000);
+
+    // Store interval reference for cleanup
+    container._clockInterval = interval;
+  },
+
+  cleanup: function(container) {
+    if (container._clockInterval) {
+      clearInterval(container._clockInterval);
+      container._clockInterval = null;
+    }
+    container.innerHTML = '';
+  }
+};
+</script>

@@ -1,0 +1,73 @@
+<!-- hold-circle.html -->
+<div class="screen-hold-circle">
+  <div class="alarm-info">
+    <div class="alarm-label">${context.label}</div>
+    <div class="alarm-time"></div>
+  </div>
+  <div class="circle-hold">
+    <div class="circle-progress"></div>
+    <button class="hold-btn">HOLD</button>
+  </div>
+</div>
+
+<script>
+    console.log('circle script executing');
+window.__screenDef = {
+  // html will be overridden, we can leave it empty
+  js: function(container, context) {
+    if (context.disabled) return;
+
+    // Show alarm time
+    const timeEl = container.querySelector('.alarm-time');
+    if (timeEl && context.time) timeEl.textContent = context.time;
+    // Show label if desired
+    const labelEl = container.querySelector('.alarm-label');
+    if (labelEl) labelEl.textContent = context.label || '';
+
+    // Hold-to-dismiss logic
+    const circle = container.querySelector('.circle-progress');
+    const btn = container.querySelector('.hold-btn');
+    let timer, start;
+
+    function startHold(e) {
+      e.preventDefault();
+      start = Date.now();
+      circle.style.transition = 'none';
+      circle.style.strokeDashoffset = 0;
+      timer = setInterval(() => {
+        const progress = Math.min((Date.now() - start) / 2000, 1);
+        circle.style.transition = `stroke-dashoffset 0.05s linear`;
+        circle.style.strokeDashoffset = (1 - progress) * 251; // adjust circumference
+        if (progress >= 1) {
+          clearInterval(timer);
+          context.onAction('hold');
+        }
+      }, 50);
+    }
+
+    function cancelHold() {
+      if (timer) clearInterval(timer);
+      circle.style.strokeDashoffset = 0;
+    }
+
+    btn.addEventListener('mousedown', startHold);
+    btn.addEventListener('touchstart', startHold, { passive: false });
+    btn.addEventListener('mouseup', cancelHold);
+    btn.addEventListener('mouseleave', cancelHold);
+    btn.addEventListener('touchend', cancelHold);
+    btn.addEventListener('touchcancel', cancelHold);
+
+    container._customCleanup = () => {
+      cancelHold();
+      btn.removeEventListener('mousedown', startHold);
+      // ... remove other listeners
+    };
+  },
+
+  cleanup: function(container) {
+    if (container._customCleanup) container._customCleanup();
+    container.innerHTML = '';
+  }
+};
+console.log('circle script done, __screenDef =', window.__screenDef);
+</script>
