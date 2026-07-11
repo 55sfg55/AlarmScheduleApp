@@ -637,6 +637,9 @@ async function renderEditor() {
     </div>
   `;
 
+  // loads the saved after-event source value if alarm had set source alarm
+  document.getElementById('editAfterSource').value = alarm.afterEventSource || '';
+
   // Listeners
   document.getElementById('editTrigger').addEventListener('change', function() {
     document.getElementById('specificGroup').style.display = this.value === 'specific' ? '' : 'none';
