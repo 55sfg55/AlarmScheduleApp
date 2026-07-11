@@ -1,5 +1,5 @@
 alarm-app\src-tauri\target
-alarm-app\node_modules
+alarm-app\node_modules\*
 
 
 
