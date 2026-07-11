@@ -1,0 +1,51 @@
+<!-- my-screen.html – place in src/screens/ -->
+<div class="my-screen {{disabled}}">
+  <style>
+    .my-screen { text-align: center; }
+    .dismiss-btn {
+      padding: 14px 40px; font-size: 1.1rem; font-weight: 700;
+      border: none; border-radius: 30px; background: var(--accent); color: #fff;
+      cursor: pointer;
+    }
+    .my-screen.disabled .dismiss-btn {
+      background: #555; pointer-events: none; opacity: 0.5;
+    }
+    .asd {
+      background-color: red;
+    }
+  </style>
+
+  <p class="alarm-time"></p>
+  <p class="alarm-label"></p>
+  <div class="asd">This is a test screen</div>
+  <button class="dismiss-btn">Dismiss {{time}}</button>
+</div>
+
+<script>
+window.__screenDef = {
+  headerHtml : "asd",
+  js: function(container, context) {
+    if (context.disabled) return;
+
+    const timeEl = container.querySelector('.alarm-time');
+    if (timeEl) timeEl.textContent = context.time || '';
+    const labelEl = container.querySelector('.alarm-label');
+    if (labelEl) labelEl.textContent = context.label || '';
+
+    const btn = container.querySelector('.dismiss-btn');
+    if (!btn) return;
+
+    const onClick = () => context.onAction('button');
+    btn.addEventListener('click', onClick);
+
+    container._myCleanup = () => {
+      btn.removeEventListener('click', onClick);
+    };
+  },
+
+  cleanup: function(container) {
+    if (container._myCleanup) container._myCleanup();
+    container.innerHTML = '';
+  }
+};
+</script>

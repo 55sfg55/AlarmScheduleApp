@@ -1,0 +1,16 @@
+<div class="screen-test">
+  <p>Test screen</p>
+    {{betweenSource}}
+    
+</div>
+
+<script>
+window.__screenDef = {
+  js: function(container, context) {
+    console.log('Test screen js called');
+    },
+  cleanup: function(container) {
+    container.innerHTML = '';
+  }
+};
+</script>
