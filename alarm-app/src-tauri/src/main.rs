@@ -4,3 +4,4 @@
 fn main() {
     alarm_app_lib::run()
 }
+

@@ -1,5 +1,4 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
   "productName": "alarm-app",
   "version": "0.1.0",
   "identifier": "com.s.alarm-app",
@@ -12,11 +11,25 @@
       {
         "title": "alarm-app",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "decorations": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+      "enable": true,
+      "scope": ["**"]}
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        { "scheme": ["myalarmapp2"] }
+      ]
+    },
+    "fs": {
+      "withGlobalTauri": true
     }
   },
   "bundle": {

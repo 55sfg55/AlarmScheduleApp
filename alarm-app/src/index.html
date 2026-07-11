@@ -1,39 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/main.js" defer></script>
-  </head>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alarm App</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+  <!-- Sidebar: alarm list -->
+  <aside id="sidebar" class="sidebar-visible">
+    <div class="sidebar-header">⏰ Alarms</div>
+    <div id="alarmList" class="alarm-list"></div>
+    <button id="addAlarmBtn" class="add-btn">+ New Alarm</button>
+  </aside>
 
-  <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
-
-      <div class="row">
-        <a href="https://tauri.app" target="_blank">
-          <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
-          target="_blank"
-        >
-          <img
-            src="/assets/javascript.svg"
-            class="logo vanilla"
-            alt="JavaScript logo"
-          />
-        </a>
+  <!-- Main content area -->
+  <main id="main">
+    <!-- Top bar with toggles -->
+    <div id="topbar">
+      <button id="sidebarToggleBtn" class="icon-btn" title="Toggle sidebar">☰</button>
+      <div class="toggles">
+        <div class="toggle-group" id="platformToggle">
+          <button data-mode="desktop" class="active">🖥 Desktop</button>
+          <button data-mode="android">📱 Android</button>
+        </div>
+        <div class="toggle-group" id="timeFormatToggle">
+          <button data-format="24h" class="active">24h</button>
+          <button data-format="12h">12h</button>
+        </div>
       </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
+      <!-- View switch button -->
+      <button id="viewSwitchBtn" class="icon-btn" title="Switch to App view">📱</button>
+    </div>
 
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
-  </body>
+    <!-- Editor view (default) -->
+    <div id="editorView" class="view active">
+      <div id="editorPanel" class="panel"></div>
+      <div id="previewPanel" class="panel">
+        <div id="previewBox">Screen Preview</div>
+      </div>
+    </div>
+
+    <!-- App view (full-screen alarm display) -->
+    <div id="appView" class="view">
+      <div id="appDisplay"></div>
+    </div>
+
+    <!-- Log panel (bottom) -->
+    <div id="logPanel">
+      <button id="logToggle">📋 Log</button>
+      <div id="logContent"></div>
+    </div>
+  </main>
+
+  <!-- Hidden file input for sound selection -->
+  <input type="file" id="soundFileInput" accept="audio/*" style="display:none"/>
+
+  <!-- Scripts -->
+  <script type="module" src="js/utils.js"></script>
+  <script type="module" src="js/alarmStore.js"></script>
+  <script type="module" src="js/screenLoader.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
 </html>
