@@ -1,0 +1,3 @@
+Treat them as AI generated summary that was made at some point during development. Many things might already be changed taken development method I decided to use (basically quick prototyping), and the docs only say how it looked like when it either was already working or had a structure.
+
+I made those files for everything I thought might be worth explaining on how it works, not to document all files.

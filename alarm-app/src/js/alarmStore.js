@@ -44,6 +44,14 @@ function createDefaults() {
       },
       soundFileName: 'reminder.mp3', soundPath: null, disableAfterAction: true,
       logMessage: 'Chained alarm fired', showBetweenScreen: true, enabled: true
+    },
+    {
+      id: 'b1',
+      label: 'Silent Night',
+      triggerType: 'blocking',
+      blockStartTime: '23:00',
+      blockEndTime: '07:00',
+      enabled: true,
     }
   ];
 }
@@ -66,6 +74,14 @@ function migrate(alarm) {
     delete alarm.soundUrl;
   }
   if (alarm.soundPath === undefined) alarm.soundPath = null;
+  if (alarm.triggerType === 'blocking') {
+    alarm.blockStartTime = alarm.blockStartTime || '23:00';
+    alarm.blockEndTime = alarm.blockEndTime || '07:00';
+  } else {
+    // For other types, clear these fields to avoid confusion
+    alarm.blockStartTime = '';
+    alarm.blockEndTime = '';
+  }
   return alarm;
 }
 

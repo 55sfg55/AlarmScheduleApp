@@ -6,7 +6,7 @@ import {
   getAlarmById, getCurrentScreenId,
   setSelectedAlarmId, setCurrentPlatform, setTimeFormat24h
 } from './alarmStore.js';
-import { addLog, formatTime } from './utils.js';
+import { addLog, formatTime, exportLogs, isTimeBlocked  } from './utils.js';
 import { loadScreen, renderScreen, getAvailableScreenIds } from './screenLoader.js';
 
 const { getCurrentWindow } = window.__TAURI__.window;
@@ -298,9 +298,22 @@ function renderAlarmList() {
   if (!alarmListEl) return;
   alarmListEl.innerHTML = alarms.map(a => {
     const primaryScreen = getCurrentScreenId(a, 'primary');
-    const timeDisplay = a.triggerType === 'specific'
-      ? formatTime(a.time, timeFormat24h)
-      : '⛓ Chained';
+    let timeDisplay;
+    if (a.triggerType === 'specific') {
+      timeDisplay = formatTime(a.time, timeFormat24h);
+    } else if (a.triggerType === 'after-event') {
+      const sourceAlarm = a.afterEventSource ? getAlarmById(a.afterEventSource.replace('button-click:', '')) : null;
+      const sourceLabel = sourceAlarm?.label || a.afterEventSource || '?';
+      timeDisplay = `⛓ Chained after ${sourceLabel} (${a.afterEventDelay || 1} min)`;
+    } else if (a.triggerType === 'between') {
+      const src = getAlarmById(a.sourceId)?.label || a.sourceId || '?';
+      const tgt = getAlarmById(a.targetId)?.label || a.targetId || '?';
+      timeDisplay = `🔄 In between: ${src} → ${tgt}`;
+    } else if (a.triggerType === 'blocking') {
+      timeDisplay = `🌙 Silent hours ${formatTime(a.blockStartTime, timeFormat24h)} – ${formatTime(a.blockEndTime, timeFormat24h)}`;
+    } else {
+      timeDisplay = 'Unknown trigger type';
+    }
     const isScheduled = alarmTimers.some(t => t.alarmId === a.id);
     return `
       <div class="alarm-item ${a.id === selectedAlarmId ? 'selected' : ''}" data-id="${a.id}">
@@ -368,6 +381,15 @@ window.__TAURI__.event.listen('alarm-triggered', (event) => {
 async function rescheduleAllAlarms() {
   await clearAllTimers();
   alarms.filter(a => a.triggerType === 'specific').forEach(scheduleAlarm);
+  // 2. Cancel any specific alarm that falls inside a silent hour
+  for (const alarm of alarms) {
+    if (alarm.enabled && alarm.triggerType === 'specific') {
+      if (isTimeBlocked(alarm.time)) {
+        await cancelAlarm(alarm.id);
+        addLog(`Alarm "${alarm.label}" at ${alarm.time} cancelled – silent hours active`);
+      }
+    }
+  }
   renderAlarmList();
 }
 
@@ -382,6 +404,7 @@ function stopAllSounds() {
 
 async function updateAppViewIdleScreen() {
     if (suppressIdleScreen) return; 
+    if (isTimeBlocked("now")) return;
 
     const container = document.getElementById('appDisplay');
 
@@ -575,13 +598,14 @@ async function renderEditor() {
         <option value="specific" ${alarm.triggerType==='specific'?'selected':''}>Specific Time</option>
         <option value="after-event" ${alarm.triggerType==='after-event'?'selected':''}>After Event</option>
         <option value="between" ${alarm.triggerType==='between'?'selected':''}>Between</option>
+        <option value="blocking" ${alarm.triggerType==='blocking'?'selected':''}>Blocking (Silent Hours)</option>
       </select></div>
     </div>
 
     <div id="specificGroup" ${alarm.triggerType==='between' || alarm.triggerType==='after-event'?'style="display:none"':''}>
       <div class="form-group">
-        <label>Time (24h)</label>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <label style="display: ${alarm.triggerType === 'blocking' ? 'none' : 'block'}">Time (24h)</label>
+        <div  style="display: ${alarm.triggerType === 'blocking' ? 'none' :  'display:flex;gap:8px;align-items:center;'}" >
           <select id="editHour" style="width:80px;">${hours24.map(i => `<option value="${i}" ${i===h?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
           <span style="font-size:1.2rem;">:</span>
           <select id="editMinute" style="width:80px;">${minutes.map(i => `<option value="${i}" ${i===m?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
@@ -593,6 +617,25 @@ async function renderEditor() {
     <div id="afterGroup" ${alarm.triggerType==='after-event'?'':'style="display:none"'}>
       <div class="form-group"><label>Source Event</label><select id="editAfterSource"><option value="">-- select --</option>${eventSources}</select></div>
       <div class="form-group"><label>Delay (min)</label><input type="number" id="editAfterDelay" value="${alarm.afterEventDelay||5}" min="0" max="120"></div>
+    </div>
+
+    <div id="blockingGroup" ${alarm.triggerType==='blocking'?'':'style="display:none"'}>
+      <div class="form-group">
+        <label>Start time</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="blockStartHour" style="width:80px;">${hours24.map(i => `<option value="${i}" ${i===parseInt(alarm.blockStartTime?.split(':')[0]||'23')?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
+          <span>:</span>
+          <select id="blockStartMinute" style="width:80px;">${minutes.map(i => `<option value="${i}" ${i===parseInt(alarm.blockStartTime?.split(':')[1]||'0')?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>End time</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="blockEndHour" style="width:80px;">${hours24.map(i => `<option value="${i}" ${i===parseInt(alarm.blockEndTime?.split(':')[0]||'07')?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
+          <span>:</span>
+          <select id="blockEndMinute" style="width:80px;">${minutes.map(i => `<option value="${i}" ${i===parseInt(alarm.blockEndTime?.split(':')[1]||'0')?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
+        </div>
+      </div>
     </div>
 
     <div id="betweenGroup" ${alarm.triggerType==='between'?'':'style="display:none"'}>
@@ -619,8 +662,8 @@ async function renderEditor() {
     <div class="section-title">Sound & Behaviour</div>
     <div class="form-row">
       <div class="form-group">
-        <label>Sound file</label>
-        <div style="display:flex;gap:4px;">
+        <label style="display: ${alarm.triggerType === 'blocking' ? 'none' : 'block'}">Sound file</label>
+        <div style="display: ${alarm.triggerType === 'blocking' ? 'none' : 'flex;gap:4px;'}">
           <span id="soundNameDisplay" style="flex:1;padding:8px;background:var(--surface2);border-radius:8px;">${alarm.soundFileName||'none'}</span>
           <button class="btn btn-outline" id="browseSoundBtn">📁</button>
         </div>
@@ -645,6 +688,7 @@ async function renderEditor() {
     document.getElementById('specificGroup').style.display = this.value === 'specific' ? '' : 'none';
     document.getElementById('afterGroup').style.display = this.value === 'after-event' ? '' : 'none';
     document.getElementById('betweenGroup').style.display = this.value === 'between' ? '' : 'none';
+    document.getElementById('blockingGroup').style.display = this.value === 'blocking' ? '' : 'none';
   });
 
   document.getElementById('browseSoundBtn').addEventListener('click', async () => {
@@ -742,6 +786,18 @@ function saveCurrentAlarm(alarm) {
     alarm.afterEventDelay  = parseInt(document.getElementById('editAfterDelay').value) || 5;
   }
 
+  if (alarm.triggerType === 'blocking') {
+    const sh = document.getElementById('blockStartHour').value.padStart(2,'0');
+    const sm = document.getElementById('blockStartMinute').value.padStart(2,'0');
+    alarm.blockStartTime = `${sh}:${sm}`;
+    const eh = document.getElementById('blockEndHour').value.padStart(2,'0');
+    const em = document.getElementById('blockEndMinute').value.padStart(2,'0');
+    alarm.blockEndTime = `${eh}:${em}`;
+  } else {
+    alarm.blockStartTime = '';
+    alarm.blockEndTime = '';
+  }
+
   alarm.showBetweenScreen = document.getElementById('editShowBetween').checked;
   alarm.screens.desktop.primary   = document.getElementById('deskPrimary').value;
   alarm.screens.desktop.secondary = document.getElementById('deskSecondary').value;
@@ -781,6 +837,18 @@ function updatePreview() {
   const alarm = getAlarmById(selectedAlarmId);
   if (!alarm) {
     previewBoxEl.innerHTML = '<span style="color:var(--text2)">No alarm selected</span>';
+    return;
+  }
+  if (alarm.triggerType === 'blocking') {
+    previewBoxEl.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--text2);">
+        <div style="font-size:2rem;">🌙</div>
+        <div>Silent hours: ${formatTime(alarm.blockStartTime, timeFormat24h)} – ${formatTime(alarm.blockEndTime, timeFormat24h)}</div>
+        <div style="font-size:0.8rem;">Alarms inside this interval will be silenced</div>
+      </div>
+    `;
+    if (previewBoxEl._cleanup) previewBoxEl._cleanup();
+    previewBoxEl._cleanup = null;
     return;
   }
   const screenId = getCurrentScreenId(alarm, 'primary');
@@ -947,6 +1015,12 @@ export async function triggerAlarm(alarmId) {
   console.debug('[triggerAlarm]', alarmId);
   const alarm = getAlarmById(alarmId);
   if (!alarm || !alarm.enabled) return;
+
+  if (alarm.triggerType === 'specific' && isTimeBlocked(alarm.time)) {
+    addLog(`Alarm "${alarm.label}" at ${alarm.time} skipped – silent hours active`);
+    return;
+  }
+
   if (soundCopyPromises[alarm.id]) await soundCopyPromises[alarm.id];
   await ensureAlarmSoundPersistent(alarm);
 
@@ -1020,6 +1094,11 @@ function toggleSidebar() {
 
 // ── Init ──
 async function init() {
+
+  document.getElementById('exportLogsBtn').addEventListener('click', () => {
+    exportLogs();
+  });
+
   loadAlarms();
   console.debug('[init] Alarms loaded:', alarms.length);
 

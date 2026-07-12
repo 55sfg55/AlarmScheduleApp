@@ -2,6 +2,8 @@
 
 > A Tauri‑based alarm clock application with a screen‑based dismissal system, chained alarms, platform‑specific screens, and an extensible screen architecture.
 
+> !!! Important: don't treat it as final documentation. It is only supposed to make it easier to work with the project without archeology degree, not to actually be up to date with the project.
+
 ## 1. Overview
 The Alarm App is a desktop (and Android‑compatible via Tauri) alarm clock that supports:
 - Multiple alarms with specific times or delayed “chained” events.
